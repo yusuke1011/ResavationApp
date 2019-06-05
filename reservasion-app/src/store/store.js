@@ -3,14 +3,12 @@ import 'babel-polyfill'
 import Vue from 'vue';
 import Vuex from 'vuex';
  
-import auth from './modules/auth';
-import image from './modules/image';
+import schedule from './modules/schedule';
  
 Vue.use(Vuex);
  
 export default new Vuex.Store({
   modules: {
-    auth,
-    image
+    schedule
   }
 });
