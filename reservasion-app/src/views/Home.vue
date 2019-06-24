@@ -1,7 +1,7 @@
 <template>
   <div class="home">
     <div class="calendar-area">
-      <tabel class="calendar">
+      <table class="calendar">
         <thead class="calendar-header">
           <tr>
             <th>{{nowDateInfo.year}}</th>
@@ -18,23 +18,64 @@
             <td v-for="dateInfo in scheduleByTime.calendar" v-bind:key="dateInfo.date"><button v-on:click="selectDate(dateInfo)">{{getStatusName(dateInfo.status)}}</button></td>
           </tr>
         </tbody>
-      </tabel>
+      </table>
     </div>
+
+    <!--予約モーダルウィンドウ-->
+    <Modal v-on:close="closeModal" v-if="reserveModalFlg">
+      <p>お名前（Slackでしようしているもの）</p>
+      <div>
+        <input class="modal-input" v-model="userName">
+      </div>
+      <p>ご用件</p>
+      <div>
+        <input class="modal-input input-requirement" v-model="requirement">
+      </div>
+      <template slot="footer">
+        <b-button type="button" size="sm" variant="btn btn-danger" v-on:click="execReservation">予約</b-button>
+      </template>
+    </Modal>
+    <!--確認モーダルウィンドウ-->
+    <Modal v-on:close="closeModal" v-if="confirmModalFlg">
+      <p>お名前（Slackでしようしているもの）</p>
+      <div>
+
+      </div>
+      <p>ご用件</p>
+      <div>
+
+      </div>
+    </Modal>
+    <!--注意書きモーダルウィンドウ-->
+    <Modal v-on:close="closeModal" v-if="attentionModalFlg">
+      <p>Slackにてお問い合わせください。</p>
+    </Modal>
   </div>
 </template>
 
 <script>
 import {getWeeklyCalnendar, getTimeCalendar} from '@/lib/functions'
 import {STATUS} from '@/lib/definitions'
+import { db } from '../plugins/firebase'
+import Modal from '../components/Modal'
 
 export default {
   name: "home",
   components: {},
   data() {
     return {
+      reserveModalFlg: false,
+      confirmModalFlg: false,
+      attentionModalFlg: false,
+      userName: '',
+      requirement: ''
     };
   },
+  components: {
+    Modal
+  },
   created: function() {
+    this.$store.dispatch('getSchedules')
     console.log(getTimeCalendar(this.weeklyCalendar))
     console.log(this.weeklyCalendar)
   },
@@ -80,8 +121,47 @@ export default {
         return '要相談'
       }
     },
-    selectDate(date, time) {
-      console.log(date)
+    selectDate(dateInfo) {
+      console.log(dateInfo.status)
+      //モーダルウィンドウを表示
+      if(dateInfo.status === STATUS.APPROVAL || status === STATUS.APPLYING){
+        this.confirmModalFlg = true
+      }
+      else if (dateInfo.status === STATUS.AVAILAVLE) {
+        this.reserveModalFlg = true
+      }
+      else if (dateInfo.status === STATUS.CONTACT) {
+        this.attentionModalFlg = true
+      }
+
+      this.$store.commit('setSelectedDate', {
+        year: dateInfo.year,
+        month: dateInfo.month,
+        date: dateInfo.date,
+        time: dateInfo.time
+      })
+    },
+    execReservation() {
+      db.collection("schedules").add({
+        year: dateInfo.year,
+        month: dateInfo.month,
+        date: dateInfo.date,
+        time: dateInfo.time,
+        name: this.userName,
+        msg: this.requirement
+      })
+      .catch(err => {
+        console.log(err)
+        this.$store.commit('setErr', {errMsg: err.message})
+      })
+    },
+    closeModal() {
+      //モーダルウィンドウを非表示
+      this.confirmModalFlg = false
+      this.reserveModalFlg = false
+      this.attentionModalFlg = false
+
+      this.$store.commit('setSelectedDate')
     }
   },
   computed: {
@@ -89,13 +169,10 @@ export default {
       return this.$store.state.schedule.nowDate
     },
     weeklyCalendar() {
-      const nowYear = this.$store.state.schedule.nowDate.year
-      const nowMonth = this.$store.state.schedule.nowDate.month
-      const nowDate = this.$store.state.schedule.nowDate.date
-      return getWeeklyCalnendar(nowYear, nowMonth, nowDate)
+      return this.$store.getters.weeklyCalendar
     },
     timeCalendar() {
-      return getTimeCalendar(Array.from(this.weeklyCalendar))
+      return this.$store.getters.timeSchedule
     }
   }
 };

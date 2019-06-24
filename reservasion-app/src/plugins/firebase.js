@@ -2,19 +2,18 @@ import Vue from 'vue'
 import firebase from 'firebase'
 import 'firebase/firestore'
 
-// Firebaseの設定
-const firebaseConfig = {
-    apiKey: "AIzaSyA7yxmdWnINOQTDVoDCjSjEmPGrzo4QZ5M",
-    authDomain: "km-image.firebaseapp.com",
-    databaseURL: "https://km-image.firebaseio.com",
-    projectId: "km-image",
-    storageBucket: "km-image.appspot.com",
-    messagingSenderId: "938207171059",
-    appId: "1:938207171059:web:2bd52aa3e82909ca"
-  };
-  
-  // Firebaseの初期化
-  firebase.initializeApp(firebaseConfig);
-  
-  //firestoreの初期化
-  export const db = firebase.firestore();
+// Your web app's Firebase configuration
+var firebaseConfig = {
+  apiKey: "AIzaSyCJ0MEnFFlosaaDp02JChZzxkml6dNVv2I",
+  authDomain: "reservationapp-c13cf.firebaseapp.com",
+  databaseURL: "https://reservationapp-c13cf.firebaseio.com",
+  projectId: "reservationapp-c13cf",
+  storageBucket: "reservationapp-c13cf.appspot.com",
+  messagingSenderId: "980225099094",
+  appId: "1:980225099094:web:9b0965d59f6adb8e"
+};
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+//firestoreの初期化
+export const db = firebase.firestore();
