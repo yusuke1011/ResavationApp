@@ -23,7 +23,7 @@
 
     <!--予約モーダルウィンドウ-->
     <Modal v-on:close="closeModal" v-if="reserveModalFlg">
-      <p>お名前（Slackでしようしているもの）</p>
+      <p>お名前（Slackで使用しているもの）</p>
       <div>
         <input class="modal-input" v-model="userName">
       </div>
@@ -31,21 +31,23 @@
       <div>
         <input class="modal-input input-requirement" v-model="requirement">
       </div>
-      <template slot="footer">
-        <b-button type="button" size="sm" variant="btn btn-danger" v-on:click="execReservation">予約</b-button>
-      </template>
+      <div>
+        <b-button type="button" size="sm" variant="btn btn-danger" v-on:click="execReservation">予約する</b-button>
+      </div>
     </Modal>
+
     <!--確認モーダルウィンドウ-->
     <Modal v-on:close="closeModal" v-if="confirmModalFlg">
-      <p>お名前（Slackでしようしているもの）</p>
+      <p>予約者</p>
       <div>
-
+        {{reserverName}}
       </div>
       <p>ご用件</p>
       <div>
-
+        {{message}}
       </div>
     </Modal>
+
     <!--注意書きモーダルウィンドウ-->
     <Modal v-on:close="closeModal" v-if="attentionModalFlg">
       <p>Slackにてお問い合わせください。</p>
@@ -68,16 +70,16 @@ export default {
       confirmModalFlg: false,
       attentionModalFlg: false,
       userName: '',
-      requirement: ''
+      requirement: '',
+      reserverName: '',
+      mmessage: ''
     };
   },
   components: {
     Modal
   },
-  created: function() {
-    this.$store.dispatch('getSchedules')
-    console.log(getTimeCalendar(this.weeklyCalendar))
-    console.log(this.weeklyCalendar)
+  created: async function() {
+    await this.$store.dispatch('getSchedules')
   },
   methods: {
     //---------------------
@@ -121,10 +123,29 @@ export default {
         return '要相談'
       }
     },
-    selectDate(dateInfo) {
-      console.log(dateInfo.status)
+    async selectDate(dateInfo) {
       //モーダルウィンドウを表示
-      if(dateInfo.status === STATUS.APPROVAL || status === STATUS.APPLYING){
+      if(dateInfo.status === STATUS.APPROVAL || dateInfo.status === STATUS.APPLYING){
+      
+        const querySnapshot = await db
+        .collection('schedules')
+        .where('year', '==', dateInfo.year)
+        .where('month', '==', dateInfo.month)
+        .where('date', '==', dateInfo.date)
+        .where('time', '==', dateInfo.time)
+        .get()
+        .catch(err => {
+          console.log(err)
+          this.$store.commit('setErr', {errMsg: err.message})
+        })
+
+        const selectedSchedule = querySnapshot.docs.map(doc => {
+          return doc.data();
+        })
+
+        this.reserverName = selectedSchedule[0].name
+        this.message = selectedSchedule[0].msg
+
         this.confirmModalFlg = true
       }
       else if (dateInfo.status === STATUS.AVAILAVLE) {
@@ -141,12 +162,12 @@ export default {
         time: dateInfo.time
       })
     },
-    execReservation() {
-      db.collection("schedules").add({
-        year: dateInfo.year,
-        month: dateInfo.month,
-        date: dateInfo.date,
-        time: dateInfo.time,
+    async execReservation() {
+      await db.collection("schedules").add({
+        year: this.$store.state.schedule.selectedDate.year,
+        month: this.$store.state.schedule.selectedDate.month,
+        date: this.$store.state.schedule.selectedDate.date,
+        time: this.$store.state.schedule.selectedDate.time,
         name: this.userName,
         msg: this.requirement
       })
@@ -154,6 +175,14 @@ export default {
         console.log(err)
         this.$store.commit('setErr', {errMsg: err.message})
       })
+
+      this.$store.dispatch('getSchedules')
+
+      this.userName = ''
+      this.requirement = ''
+
+      //モーダルウィンドウを非表示
+      this.reserveModalFlg = false
     },
     closeModal() {
       //モーダルウィンドウを非表示
@@ -161,7 +190,7 @@ export default {
       this.reserveModalFlg = false
       this.attentionModalFlg = false
 
-      this.$store.commit('setSelectedDate')
+      this.$store.commit('initSelctedDate')
     }
   },
   computed: {

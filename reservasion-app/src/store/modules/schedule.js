@@ -4,7 +4,7 @@ import { db } from '@/plugins/firebase'
 
 const state = {
     nowDate: (() => {
-        const date = new Date();
+        const date = new Date()
         return {
             year: date.getFullYear(),
             month: date.getMonth() + 1,
